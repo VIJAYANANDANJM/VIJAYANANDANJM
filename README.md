@@ -1,4 +1,4 @@
-# Hi there, I'm Vijay Anand 👋
+# Hi there, I'm Vijay👋
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-vijayanandanjm-blue?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/vijayanandanjm/)  
 [![GitHub](https://img.shields.io/badge/GitHub-VIJAYANANDANJM-black?style=flat&logo=github&logoColor=white)](https://github.com/VIJAYANANDANJM)  
