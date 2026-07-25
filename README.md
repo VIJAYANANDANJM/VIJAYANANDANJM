@@ -1,7 +1,7 @@
 <h1 align="center">Hi there, I'm Vijay 👋</h1>
  
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=20&pause=1000&color=2E86DE&center=true&vCenter=true&width=600&lines=Summer+Analyst+%40+Goldman+Sachs;Full-Stack+%2B+AI%2FML+Developer;Building+Civic-Tech+%26+Agentic+AI+Systems" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=20&pause=1000&color=2E86DE&center=true&vCenter=true&width=600&lines=Ex+Summer+Analyst+%40+Goldman+Sachs;Full-Stack+%2B+AI%2FML+Developer;Building+Civic-Tech+%26+Agentic+AI+Systems" alt="Typing SVG" />
 </p>
 <p align="center">
   <a href="https://www.linkedin.com/in/vijayanandanjm/">
