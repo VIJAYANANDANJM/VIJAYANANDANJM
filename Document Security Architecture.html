@@ -1,0 +1,146 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Document Security Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: swimlane architecture. Client rail left, four pipeline tiers centre, crypto and audit rail right. */
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#16202E; --muted:#5A6678; --line:#6F7D92; --rule:#D5DBE4;
+  --client-bg:#EAEEF4; --client-ln:#7F8DA3;
+  --access-bg:#E3F0F3; --access-ln:#2A7C91;
+  --crypto-bg:#EEE9F8; --crypto-ln:#7253B0;
+  --wm-bg:#FBEFDA; --wm-ln:#B5751A;
+  --audit-bg:#E5F1E8; --audit-ln:#3A8654;
+  --for-bg:#FBE8E1; --for-ln:#BF5438;
+  --evi-bg:#E9ECF1; --evi-ln:#667386;
+  --badge:#16202E; --badge-ink:#FFFFFF;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F151E; --panel:#18212D; --ink:#E6EBF2; --muted:#98A5B8; --line:#7D8BA1; --rule:#2A3544;
+  --client-bg:#1A2330; --client-ln:#7A889E;
+  --access-bg:#12303A; --access-ln:#4FB0C8;
+  --crypto-bg:#241E3A; --crypto-ln:#A68AE0;
+  --wm-bg:#352A14; --wm-ln:#E0A24A;
+  --audit-bg:#15301F; --audit-ln:#64C287;
+  --for-bg:#3A1F18; --for-ln:#EA8466;
+  --evi-bg:#1D2531; --evi-ln:#8E9BB0;
+  --badge:#E6EBF2; --badge-ink:#0F151E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F151E; --panel:#18212D; --ink:#E6EBF2; --muted:#98A5B8; --line:#7D8BA1; --rule:#2A3544;
+  --client-bg:#1A2330; --client-ln:#7A889E;
+  --access-bg:#12303A; --access-ln:#4FB0C8;
+  --crypto-bg:#241E3A; --crypto-ln:#A68AE0;
+  --wm-bg:#352A14; --wm-ln:#E0A24A;
+  --audit-bg:#15301F; --audit-ln:#64C287;
+  --for-bg:#3A1F18; --for-ln:#EA8466;
+  --evi-bg:#1D2531; --evi-ln:#8E9BB0;
+  --badge:#E6EBF2; --badge-ink:#0F151E; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1440px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:8px 32px;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:18px}
+h1{font-size:20px;font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.key{display:flex;flex-wrap:wrap;gap:6px 20px;font:400 12px var(--mono);color:var(--muted)}
+.key span{display:inline-flex;align-items:center;gap:8px}
+.key svg{width:34px;height:10px;overflow:visible}
+.scroll{overflow-x:auto;border:1px solid var(--rule);background:var(--panel);padding:8px}
+.scroll svg{display:block;min-width:1180px;width:100%;height:auto}
+.tier{stroke-width:1}
+.tl{font:500 10.5px var(--mono);letter-spacing:.09em;text-transform:uppercase}
+.box{fill:var(--panel);stroke:var(--line);stroke-width:1}
+.n{font:500 12px var(--sans);fill:var(--ink)}
+.s{font:400 11.5px var(--sans);fill:var(--muted)}
+.lab{font:400 11px var(--mono);fill:var(--muted)}
+.flow{fill:none;stroke:var(--line);stroke-width:1.4}
+.dep{fill:none;stroke:var(--line);stroke-width:1.4;stroke-dasharray:5 4}
+.bd{fill:var(--badge);stroke:var(--panel);stroke-width:1.5}
+.bt{fill:var(--panel);stroke:var(--badge);stroke-width:1.5}
+.bl{font:600 10.5px var(--sans);text-anchor:middle;dominant-baseline:central}
+.bd+.bl{fill:var(--badge-ink)}
+.bt+.bl{fill:var(--ink)}
+h2{font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+ul.links{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:8px 28px}
+ul.links li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:13px;line-height:1.45;min-width:0}
+.pill{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--badge);color:var(--badge-ink);font:600 11px var(--sans)}
+.pill.t{background:var(--panel);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--badge)}
+.lk{display:flex;flex-wrap:wrap;gap:2px 6px}
+.lk em{font-style:normal;color:var(--muted);font:400 12px var(--mono)}
+:focus-visible{outline:2px solid var(--access-ln);outline-offset:2px}
+</style>
+<div class="wrap">
+<header>
+  <h1>Document Security Architecture</h1>
+  <div class="key">
+    <span><svg viewBox="0 0 34 10"><line x1="0" y1="5" x2="30" y2="5" class="flow" marker-end="url(#ah)"/></svg>Control and data flow</span>
+    <span><svg viewBox="0 0 34 10"><line x1="0" y1="5" x2="30" y2="5" class="dep" marker-end="url(#ah)"/></svg>Dependency and verification</span>
+    <span><svg viewBox="0 0 34 10"><circle cx="5" cy="5" r="5" class="bd"/><circle cx="26" cy="5" r="5" class="bt"/></svg>Source and target of a link A to F</span>
+  </div>
+</header>
+<div class="scroll"><svg id="d" viewBox="0 0 1400 760" role="img" aria-labelledby="dt dd"><title id="dt">Document security architecture</title><desc id="dd">Client actors on the left feed an access gateway, neural watermarking, forensic investigation and evidence verification pipeline. Cryptographic services and a tamper-evident audit layer sit on the right.</desc>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="context-stroke"/></marker></defs>
+</svg></div>
+<h2>Cross-layer links</h2>
+<ul class="links" id="links"></ul>
+</div>
+<script>
+(function(){
+var NS="http://www.w3.org/2000/svg",svg=document.getElementById("d");
+function el(t,a,p,txt){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;(p||svg).appendChild(e);return e}
+var T={client:[20,104,180,602,"Client layer"],access:[250,104,760,108,"Access control and gateway"],wm:[250,254,760,108,"Neural watermarking"],"for":[250,404,760,108,"Forensic investigation"],evi:[250,554,760,108,"Evidence and verification"],crypto:[1150,104,230,310,"Cryptographic services"],audit:[1150,434,230,274,"Tamper-evident audit layer"]};
+for(var k in T){var t=T[k];el("rect",{x:t[0],y:t[1],width:t[2],height:t[3],rx:2,"class":"tier",style:"fill:var(--"+k+"-bg);stroke:var(--"+k+"-ln)"});el("text",{x:t[0]+14,y:t[1]+20,"class":"tl",style:"fill:var(--"+k+"-ln)"},null,t[4])}
+var P={};
+function box(id,x,y,w,h,names,subs){P[id]=[x,y,w,h];el("rect",{x:x,y:y,width:w,height:h,rx:2,"class":"box"});var all=names.concat(subs||[]),n=all.length,y0=y+h/2-(n-1)*7.5;all.forEach(function(s,i){el("text",{x:x+w/2,y:y0+i*15,"text-anchor":"middle","dominant-baseline":"central","class":i<names.length?"n":"s"},null,s)})}
+box("admin",35,128,150,48,["Sender / Admin"]);
+box("rec",35,293,150,48,["Recipient","Application"]);
+box("inv",35,443,150,48,["Investigator"]);
+box("ver",35,593,150,48,["Offline Verifier"]);
+box("api",270,140,160,54,["API /","Authentication"]);
+box("auth",460,140,160,54,["Request","Validation"]);
+box("rel",650,140,160,54,["Controlled Key","Release"]);
+box("dec",840,140,160,54,["Document","Decryption"]);
+box("id",840,290,160,54,["Session Fingerprint","Generation"]);
+box("enc",650,290,160,54,["SAiW-Inspired","Neural Encoder"]);
+box("emb",460,290,160,54,["Embed into Rendered","Document Pages"]);
+box("del",270,290,160,54,["Fingerprint-Embedded","PDF / Page Images"]);
+box("inp",266,440,130,54,["Leaked PDF /","Image"]);
+box("pre",418,440,130,54,["Image","Normalization"]);
+box("det",570,440,130,54,["Neural Watermark"],["Detector"]);
+box("mat",722,440,130,54,["Candidate","Session","Matching"]);
+box("dsc",874,440,130,54,["MATCH /","INCONCLUSIVE","/ NO MATCH"]);
+box("bun",840,590,160,54,["Evidence Bundle"]);
+box("chk",650,590,160,54,["Verify Signatures,","Certificates and","Log Proofs"]);
+box("com",460,590,160,54,["Verify Fingerprint","Commitment"]);
+box("res",270,590,160,54,["VALID / INVALID"]);
+box("sig",1165,140,200,54,["ML-DSA-65 / ML-DSA-87"],["Digital Signatures"]);
+box("pqc",1165,208,200,54,["ML-KEM-768"],["Key Establishment"]);
+box("aes",1165,276,200,54,["AES-256-GCM"],["Document Encryption"]);
+box("kdf",1165,344,200,54,["HKDF / HMAC / SHA3-256"],["Key Derivation and Commitments"]);
+box("evt",1165,464,200,54,["Signed Event Log"],["Hash Chain"]);
+box("mrk",1165,538,200,54,["Merkle Tree"],["Inclusion / Consistency Proofs"]);
+box("wit",1165,630,200,54,["Independent Witnesses"],["Signed Checkpoints"]);
+function f(d){el("path",{d:d,"class":"flow","marker-end":"url(#ah)"})}
+function g(d){el("path",{d:d,"class":"dep","marker-end":"url(#ah)"})}
+["M185,152H268","M185,305H228V182H268","M268,329H187","M185,467H264","M268,617H187","M110,641V700H920V646",
+"M432,167H458","M622,167H648","M812,167H838","M838,317H812","M648,317H622","M458,317H432","M920,194V288",
+"M398,467H416","M550,467H568","M702,467H720","M854,467H872","M939,494V588","M838,617H812","M648,617H622","M458,617H432","M1180,518V536"].forEach(f);
+["M540,140V44H1112V167H1163","M730,140V64H1094V235H1163","M920,140V84H1076V303H1163","M1000,320H1030V371H1163","M1180,628V594"].forEach(g);
+function L(x,y,s,a){el("text",{x:x,y:y,"class":"lab","text-anchor":a||"start","dominant-baseline":"central"},null,s)}
+L(560,35,"Verify signatures");L(750,55,"Establish shared secret");L(940,75,"Decrypt document");L(1040,386,"Keyed identifier");L(1198,611,"Approve consistent heads");
+function B(x,y,c,src){el("circle",{cx:x,cy:y,r:9,"class":src?"bd":"bt"});el("text",{x:x,y:y,"class":"bl"},null,c)}
+var links=[
+["A","auth","evt","Request Validation","Signed Event Log",""],
+["B","rel","mrk","Controlled Key Release","Merkle Tree","Require committed request"],
+["C","del","evt","Fingerprint-Embedded PDF / Page Images","Signed Event Log",""],
+["D","evt","mat","Signed Event Log","Candidate Session Matching","Candidate session records"],
+["E","evt","bun","Signed Event Log","Evidence Bundle","Signed records and proofs"],
+["F","wit","chk","Independent Witnesses","Verify Signatures, Certificates and Log Proofs","Witness signatures"]];
+var S={A:[600,194],B:[790,194],C:[410,344],D:[1215,518],E:[1245,518],F:[1165,657]};
+var Tg={A:[1165,478],B:[1165,565],C:[1165,498],D:[832,440],E:[980,590],F:[790,590]};
+links.forEach(function(l){var c=l[0];B(S[c][0],S[c][1],c,true);B(Tg[c][0],Tg[c][1],c,false)});
+var ul=document.getElementById("links");
+links.forEach(function(l,i){var li=document.createElement("li");var dash=i==0||i==2?"":"";li.innerHTML='<span class="pill">'+l[0]+'</span><span class="lk"><span>'+l[3]+' &rarr; '+l[4]+'</span>'+(l[5]?'<em>'+l[5]+'</em>':'')+'</span>';ul.appendChild(li)});
+})();
+</script>
+
+</body></html>
